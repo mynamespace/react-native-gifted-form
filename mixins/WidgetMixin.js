@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Image, View } from 'react-native';
+import { Image } from 'react-native';
 
 
 var GiftedFormManager = require('../GiftedFormManager');
@@ -22,6 +22,7 @@ module.exports = {
     formStyles: PropTypes.object,
     validationImage: PropTypes.bool,
     openModal: PropTypes.func,
+    customValidationView: PropTypes.func,
     // navigator: ,
     onFocus: PropTypes.func,
     onBlur: PropTypes.func,
@@ -43,6 +44,7 @@ module.exports = {
       navigator: null,
       onFocus: () => {},
       onBlur: () => {},
+      customValidationView: () => {},
       validateOnEmpty: false,
     };
   },
@@ -50,7 +52,7 @@ module.exports = {
   componentDidMount() {
     // get value from prop
     if (typeof this.props.value !== 'undefined') {
-      this._setValue(this.props.value);
+      this._setValue(this.props.value, true);
       return;
     }
     // get value from store
@@ -68,6 +70,12 @@ module.exports = {
   componentWillReceiveProps(nextProps) {
     if (typeof nextProps.value !== 'undefined' && nextProps.value !== this.props.value) {
       this._onChange(nextProps.value);
+    }
+  },
+
+  componentDidUpdate(prevProps) {
+    if (this.props.type === 'OptionWidget' && typeof this.state.value !== "boolean" && this.props.isSelected) {
+      this.setState( prevState => ({ ...prevState, value: true }));
     }
   },
 
@@ -136,11 +144,27 @@ module.exports = {
     }
   },
 
-  _setValue(value) {
-    this.setState({
-      value: value
-    });
-    GiftedFormManager.updateValue(this.props.formName, this.props.name, value);
+  _setValue(value, isMount=false) {
+    if (this.props.type === 'OptionWidget') {
+      const fieldVal = this.props.fieldVal;
+      if (isMount) {
+        if (fieldVal) {
+          this.setState({
+            value: fieldVal.indexOf(value) >= 0
+          });
+        }
+      } else {
+        this.setState({
+          value: value
+        });
+        GiftedFormManager.updateValue(this.props.formName, this.props.name, value);
+      }
+    } else {
+      this.setState({
+        value: value
+      });
+      GiftedFormManager.updateValue(this.props.formName, this.props.name, value);
+    }
   },
 
   _onChange(value, onChangeText = true) {
@@ -160,8 +184,8 @@ module.exports = {
   _renderValidationError() {
     let hasValue = typeof this.state.value !== 'undefined' && this.state.value !== '';
 
-    if (this.props.validateOnEmpty && !hasValue) {
-      return null;
+    if (this.props.validateOnEmpty) {
+      hasValue = true;
     }
 
     if (!hasValue) {
@@ -181,10 +205,6 @@ module.exports = {
         message={this.state.validationErrorMessage}
       />
     );
-  },
-
-  _renderRightButton(){
-    return <View style={{position: "absolute", top: 10, right: 10}}>{this.props.rightButton && this.props.rightButton()}</View>
   },
 
   _renderImage() {
@@ -208,15 +228,8 @@ module.exports = {
 
     let hasValue = typeof this.state.value !== 'undefined' && this.state.value !== '';
 
-    if (this.props.validateOnEmpty && !hasValue) {
-      const imageSrc = require('../icons/check.png');
-      return (
-        <Image
-          style={this.getStyle('rowImage')}
-          resizeMode={"contain"}
-          source={imageSrc}
-        />
-      );
+    if (this.props.validateOnEmpty) {
+      hasValue = true;
     }
 
     const hasValidationErrors = this.state.validationErrorMessage !== null;
@@ -224,23 +237,12 @@ module.exports = {
     const isOptionWidget = this.props.type === 'OptionWidget'
     const shouldShowValidationImage = this.props.validationImage === true;
 
-    if(!hasValue && !hasImageProp && !isOptionWidget && shouldShowValidationImage && toValidate){
-      const imageSrc = require('../icons/invalid.png');
-
-      return (
-        <Image
-          style={this.getStyle('rowImage')}
-          resizeMode={"contain"}
-          source={imageSrc}
-        />
-      );
-    } else if (hasValue && !hasImageProp && !isOptionWidget && shouldShowValidationImage && toValidate) {
+    if (hasValue && hasImageProp && !isOptionWidget && shouldShowValidationImage && toValidate) {
       const imageSrc = hasValidationErrors ? require('../icons/delete_sign.png'):require('../icons/checkmark.png');
-
       return (
         <Image
           style={this.getStyle('rowImage')}
-          resizeMode={"contain"}
+          resizeMode="contain"
           source={imageSrc}
         />
       );
@@ -252,21 +254,49 @@ module.exports = {
       return (
         <Image
           style={this.getStyle('rowImage')}
-          resizeMode={"contain"}
+          resizeMode="contain"
           source={this.props.image}
-        />
-      );
-    } else if (shouldShowValidationImage && !isOptionWidget){
-      const imageSrc = require('../icons/check.png');
-      return (
-        <Image
-          style={this.getStyle('rowImage')}
-          resizeMode={"contain"}
-          source={imageSrc}
         />
       );
     }
 
+    return null;
+  },
+
+  _renderCustomValidationView() {
+    var validators = null;
+    if (this.props.displayValue) {
+      // in case of modal widget
+      validators = GiftedFormManager.getValidators(this.props.formName, this.props.displayValue);
+    } else {
+      validators = GiftedFormManager.getValidators(this.props.formName, this.props.name);
+    }
+
+    let toValidate = false;
+    if (Array.isArray(validators.validate)) {
+      if (validators.validate.length > 0) {
+        toValidate = true;
+      }
+    }
+
+    // @todo image delete_sign / checkmark should be editable via option
+    // @todo options enable live validation
+
+    let hasValue = typeof this.state.value !== 'undefined' && this.state.value !== '';
+
+    if (this.props.validateOnEmpty) {
+      hasValue = true;
+    }
+
+    const hasValidationErrors = this.state.validationErrorMessage !== null;
+    const isOptionWidget = this.props.type === 'OptionWidget';
+    const shouldShowValidationImage = this.props.validationImage === true;
+
+    if (this.props.customValidationView) {
+      const showValidation = hasValue && !isOptionWidget && shouldShowValidationImage && toValidate;
+      const isValid = !hasValidationErrors;
+      return this.props.customValidationView(showValidation, isValid)
+    }
     return null;
   },
 };
