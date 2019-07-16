@@ -43,6 +43,8 @@ module.exports = createReactClass({
         onValidation: this.props.onValidation,
         onValueChange: this.props.onValueChange,
 
+        isSelected: fieldVal && Array.isArray(fieldVal) && fieldVal.indexOf(val) >= 0,
+        fieldVal,
         name: this.props.name+'{'+val+'}',
         ref: this.props.name+'{'+val+'}',
         value: val,

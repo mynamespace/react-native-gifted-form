@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Image } from 'react-native';
 
-
 var GiftedFormManager = require('../GiftedFormManager');
 
 module.exports = {
@@ -67,11 +66,19 @@ module.exports = {
     }
   },
 
-  componentDidUpdate(prevProps) {
-    if (typeof this.props.value !== 'undefined' && prevProps.value !== this.props.value) {
+  componentWillReceiveProps(nextProps) {
+    if (typeof nextProps.value !== 'undefined' && nextProps.value !== this.props.value) {
       this._onChange(nextProps.value);
     }
+    
+    if (typeof nextProps.value !== 'undefined' && nextProps.value !== null &&
+      (this.props.value !== nextProps.value || nextProps.value !== this.state.value)) {
+      this._setValue(nextProps.value, false);
+      this._validate(nextProps.value);
+    }
+  },
 
+  componentDidUpdate(prevProps) {
     if (this.props.type === 'OptionWidget' && typeof this.state.value !== "boolean" && this.props.isSelected) {
       this.setState( prevState => ({ ...prevState, value: true }));
     }

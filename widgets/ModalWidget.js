@@ -28,6 +28,8 @@ module.exports = createReactClass({
       disclosure: true,
       cancelable: false,
       displayValue: '',
+      nullDisplayValue: true,
+      showDoneButton: true,
       onClose: () => {}
     };
   },
@@ -37,6 +39,8 @@ module.exports = createReactClass({
     scrollEnabled: PropTypes.bool,
     disclosure: PropTypes.bool,
     cancelable: PropTypes.bool,
+    showDoneButton: PropTypes.bool,
+    nullDisplayValue: PropTypes.bool,
     displayValue: PropTypes.string,
     onClose: PropTypes.func
   },
@@ -54,7 +58,7 @@ module.exports = createReactClass({
       return (
         <Image
           style={this.getStyle('disclosure')}
-          resizeMode={"contain"}
+          resizeMode="contain"
           source={require('../icons/disclosure.png')}
         />
       );
@@ -74,6 +78,7 @@ module.exports = createReactClass({
 
 
     var route = {
+      showDoneButton: this.props.showDoneButton,
       onClose: _self.onClose,
       renderScene(navigator) {
         // not passing onFocus/onBlur of the current scene to the new scene
@@ -114,7 +119,7 @@ module.exports = createReactClass({
                   marginLeft: 10,
                   tintColor: '#097881',
                 }}
-                resizeMode={"contain"}
+                resizeMode="contain"
                 source={require('../icons/close.png')}
               />
             </TouchableOpacity>
@@ -137,10 +142,9 @@ module.exports = createReactClass({
               style={{
                 width: 21,
                 marginRight: 10,
-                marginTop: 5,
                 tintColor: '#097881',
               }}
-              resizeMode={"contain"}
+              resizeMode="contain"
               source={require('../icons/check.png')}
             />
           </TouchableOpacity>
@@ -158,7 +162,7 @@ module.exports = createReactClass({
     }
   },
 
-  componentDidMount() {
+  componentWillMount() {
     this._childrenWithProps = React.Children.map(this.props.children, (child) => {
       return React.cloneElement(child, {
         formStyles: this.props.formStyles,
@@ -174,7 +178,9 @@ module.exports = createReactClass({
         onClose: this.onClose,
       });
     });
-    
+  },
+
+  componentDidMount() {
     this.setState({
       value: this._getDisplayableValue(),
     });
@@ -185,7 +191,7 @@ module.exports = createReactClass({
       this.setState({
         value: value,
       });
-    } else if (this.props.displayValue !== '') {
+    } else if (this.props.displayValue !== '' && (value !== null || this.props.nullDisplayValue)) {
       this.setState({
         value: this._getDisplayableValue(),
       });
@@ -195,9 +201,7 @@ module.exports = createReactClass({
       navigator.pop();
     }
 
-    setTimeout(()=>{
-      this.props.onClose && this.props.onClose(this.state.value);
-    }, 100)
+    this.props.onClose && this.props.onClose();
   },
 
   refreshDisplayableValue() {
@@ -206,8 +210,11 @@ module.exports = createReactClass({
     });
   },
 
-  onSetOptionTitleList(list) {
-    this.titleList = list;
+  _loadOptionTitleList() {
+    this.titleList = [];
+    if (this.props.children.props.children) {
+      this.props.children.props.children.map(child => this.titleList[child.props.value] = child.props.title);
+    }
   },
 
   _getDisplayableValue() {
@@ -218,7 +225,13 @@ module.exports = createReactClass({
             if (typeof this.props.transformValue === 'function') {
               return this.props.transformValue(GiftedFormManager.stores[this.props.formName].values[this.props.displayValue]);
             } else if (GiftedFormManager.stores[this.props.formName].values[this.props.displayValue] instanceof Date) {
-              return moment(GiftedFormManager.stores[this.props.formName].values[this.props.displayValue]).format("MM/DD/YYYY");
+              return moment(GiftedFormManager.stores[this.props.formName].values[this.props.displayValue]).calendar(null, {
+                sameDay: '[Today]',
+                nextDay: '[Tomorrow]',
+                nextWeek: 'dddd',
+                lastDay: '[Yesterday]',
+                lastWeek: '[Last] dddd'
+              });
             }
             if (typeof GiftedFormManager.stores[this.props.formName].values[this.props.displayValue] === 'string') {
               return GiftedFormManager.stores[this.props.formName].values[this.props.displayValue].trim();
@@ -236,14 +249,11 @@ module.exports = createReactClass({
                   return this.props.transformValue(values[this.props.displayValue]);
                 } else {
                   if (Array.isArray(values[this.props.displayValue])) {
-                    /*if(this.props.data){
-                      return values[this.props.displayValue].map((key)=>{
-                        let selectedItem = this.props.data.find((item)=>item.key === key);
-                        return selectedItem && selectedItem.title;
-                      }).join(', ');
+                    if (typeof this.titleList === 'undefined') {
+                      this._loadOptionTitleList();
                     }
-                    return values[this.props.displayValue].join(', ');*/
                     return values[this.props.displayValue].map(item => this.titleList[item]).join(', ');
+                    //return values[this.props.displayValue].join(', ');
                   } else if (values[this.props.displayValue] instanceof Date) {
                     return moment(values[this.props.displayValue]).calendar(null, {
                       sameDay: '[Today]',
@@ -253,11 +263,7 @@ module.exports = createReactClass({
                       lastWeek: '[Last] dddd'
                     });
                   } else {
-                    if(this.props.data){
-                      let selectedValue = this.props.data.find((item)=> item.key === values[this.props.displayValue]);
-                      return selectedValue && selectedValue.title;
-                    }
-                    return values[this.props.displayValue] ;
+                    return values[this.props.displayValue];
                   }
                 }
               }
@@ -270,32 +276,6 @@ module.exports = createReactClass({
   },
 
   render() {
-    if (this.props.inline === false) {
-      return (
-        <TouchableHighlight
-          onPress={() => {
-          this.requestAnimationFrame(() => {
-            this.onPress();
-          });
-        }}
-          underlayColor={this.getStyle('underlayColor').pop()}
-
-          {...this.props} // mainly for underlayColor
-
-          >
-          <View style={this.getStyle(['rowContainer'])}>
-            <View style={this.getStyle(['titleContainer'])}>
-              {this._renderImage()}
-              <Text numberOfLines={1} style={this.getStyle(['modalTitle'])}>{this.props.title}</Text>
-               {this.renderRightButton()}
-            </View>
-            <Text numberOfLines={1} style={this.getStyle('modalValue')}>{this.state.value}</Text>
-
-          </View>
-        </TouchableHighlight>
-
-      )
-    }
     return (
       <TouchableHighlight
         onPress={() => {
@@ -311,9 +291,10 @@ module.exports = createReactClass({
       >
         <View style={this.getStyle('row')}>
           {this._renderImage()}
-          <Text numberOfLines={1} style={this.getStyle('modalTitleInline')}>{this.props.title}</Text>
+          {this._renderCustomValidationView()}
+          <Text numberOfLines={1} style={this.getStyle('modalTitle')}>{this.props.title}</Text>
           <View style={this.getStyle('alignRight')}>
-            <Text numberOfLines={1} style={this.getStyle('modalValueInline')}>{this.state.value}</Text>
+            <Text numberOfLines={1} style={this.getStyle('modalValue')}>{this.state.value}</Text>
           </View>
           {this.renderDisclosure()}
         </View>
@@ -338,18 +319,13 @@ module.exports = createReactClass({
       height: 44,
       alignItems: 'center',
     },
-    titleContainer: {
-      paddingTop: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
     disclosure: {
       // transform: [{rotate: '90deg'}],
       marginLeft: 10,
       marginRight: 10,
       width: 11,
     },
-    modalTitleInline: {
+    modalTitle: {
       flex: 1,
       fontSize: 15,
       color: '#000',
@@ -359,22 +335,9 @@ module.exports = createReactClass({
       alignItems: 'flex-end',
       // width: 110,
     },
-    modalValueInline: {
-      fontSize: 15,
-      color: '#c7c7cc',
-    },
-    modalTitle: {
-      fontSize: 13,
-      color: '#333',
-      paddingLeft: 10,
-      flex: 1
-    },
     modalValue: {
       fontSize: 15,
-      flex: 1,
-      height: 30,
-      marginLeft: 40,
-      marginTop: 10
+      color: '#c7c7cc',
     },
   },
 });
