@@ -79,7 +79,7 @@ const GiftedForm = createReactClass({
     }
   },
 
-  componentDidMount() {
+  UNSAFE_componentWillMount() {
     // register validators
     for (let key in this.props.validators) {
       if (this.props.validators.hasOwnProperty(key)) {

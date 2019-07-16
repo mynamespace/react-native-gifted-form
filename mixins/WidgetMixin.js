@@ -66,7 +66,7 @@ module.exports = {
     }
   },
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (typeof nextProps.value !== 'undefined' && nextProps.value !== this.props.value) {
       this._onChange(nextProps.value);
     }

@@ -80,6 +80,7 @@ module.exports = createReactClass({
     var route = {
       showDoneButton: this.props.showDoneButton,
       onClose: _self.onClose,
+      onClearSelection: _self.onClearSelection,
       renderScene(navigator) {
         // not passing onFocus/onBlur of the current scene to the new scene
         var {onFocus, onBlur, ...others} = _self.props;
@@ -184,6 +185,20 @@ module.exports = createReactClass({
     this.setState({
       value: this._getDisplayableValue(),
     });
+  },
+
+  onClearSelection(navigator = null) {
+    this.setState({
+      value: null
+    });
+
+    GiftedFormManager.clearSelect(this.props.formName, this.props.displayValue);
+
+    if (navigator !== null) {
+      navigator.pop();
+    }
+
+    this.props.onClearSelection && this.props.onClearSelection();
   },
 
   onClose(value, navigator = null) {
