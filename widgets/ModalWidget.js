@@ -283,7 +283,7 @@ module.exports = createReactClass({
             <View style={this.getStyle(['titleContainer'])}>
               {this._renderImage()}
               <Text numberOfLines={1} style={this.getStyle(['modalTitle'])}>{this.props.title}</Text>
-               {this._renderRightButton()}
+               {this.renderRightButton()}
             </View>
             <Text numberOfLines={1} style={this.getStyle('modalValue')}>{this.state.value}</Text>
 
