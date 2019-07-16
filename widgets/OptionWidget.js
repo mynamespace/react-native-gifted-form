@@ -19,6 +19,7 @@ module.exports = createReactClass({
     return ({
       // onChange: null,
       type: 'OptionWidget',
+      isSelected: false
     });
   },
   
@@ -56,12 +57,8 @@ module.exports = createReactClass({
         this.props.onClose(this.props.title, this.props.navigator);
       }
     } else {
-      if(this.state.value !== true && this.state.value !== false){
-        this._onChange(true)
-
-      }else{
-        this._onChange(!this.state.value)
-      }
+      const val = typeof this.state.value === "boolean" && this.state.value;
+      this._onChange(!val);
     }
   },
   

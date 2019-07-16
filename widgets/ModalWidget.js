@@ -169,6 +169,7 @@ module.exports = createReactClass({
         onBlur: this.props.onBlur,
         onValidation: this.props.onValidation,
         onValueChange: this.props.onValueChange,
+        onSetOptionTitleList: this.onSetOptionTitleList,
 
         onClose: this.onClose,
       });
@@ -207,6 +208,10 @@ module.exports = createReactClass({
     });
   },
 
+  onSetOptionTitleList(list) {
+    this.titleList = list;
+  },
+
   _getDisplayableValue() {
     if (this.props.displayValue !== '') {
       if (typeof GiftedFormManager.stores[this.props.formName] !== 'undefined') {
@@ -233,13 +238,14 @@ module.exports = createReactClass({
                   return this.props.transformValue(values[this.props.displayValue]);
                 } else {
                   if (Array.isArray(values[this.props.displayValue])) {
-                    if(this.props.data){
+                    /*if(this.props.data){
                       return values[this.props.displayValue].map((key)=>{
                         let selectedItem = this.props.data.find((item)=>item.key === key);
                         return selectedItem && selectedItem.title;
                       }).join(', ');
                     }
-                    return values[this.props.displayValue].join(', ');
+                    return values[this.props.displayValue].join(', ');*/
+                    return values[this.props.displayValue].map(item => this.titleList[item]).join(', ');
                   } else if (values[this.props.displayValue] instanceof Date) {
                     return moment(values[this.props.displayValue]).calendar(null, {
                       sameDay: '[Today]',
