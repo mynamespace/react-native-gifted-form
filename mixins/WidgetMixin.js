@@ -67,13 +67,11 @@ module.exports = {
     }
   },
 
-  componentWillReceiveProps(nextProps) {
-    if (typeof nextProps.value !== 'undefined' && nextProps.value !== this.props.value) {
+  componentDidUpdate(prevProps) {
+    if (typeof this.props.value !== 'undefined' && prevProps.value !== this.props.value) {
       this._onChange(nextProps.value);
     }
-  },
 
-  componentDidUpdate(prevProps) {
     if (this.props.type === 'OptionWidget' && typeof this.state.value !== "boolean" && this.props.isSelected) {
       this.setState( prevState => ({ ...prevState, value: true }));
     }

@@ -158,7 +158,7 @@ module.exports = createReactClass({
     }
   },
 
-  componentWillMount() {
+  componentDidMount() {
     this._childrenWithProps = React.Children.map(this.props.children, (child) => {
       return React.cloneElement(child, {
         formStyles: this.props.formStyles,
@@ -174,9 +174,7 @@ module.exports = createReactClass({
         onClose: this.onClose,
       });
     });
-  },
-
-  componentDidMount() {
+    
     this.setState({
       value: this._getDisplayableValue(),
     });

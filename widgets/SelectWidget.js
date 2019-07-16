@@ -27,6 +27,8 @@ module.exports = createReactClass({
   },
 
   render() {
+    const titleList = [];
+    var fieldVal = GiftedFormManager.getValue(this.props.formName, this.props.name);
     this._childrenWithProps = React.Children.map(this.props.children, (child, idx) => {
       var val = child.props.value || child.props.title;
       titleList[child.props.value] = child.props.title;
