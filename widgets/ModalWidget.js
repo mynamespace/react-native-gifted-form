@@ -299,9 +299,7 @@ module.exports = createReactClass({
           });
         }}
         underlayColor={this.getStyle('underlayColor').pop()}
-
         {...this.props} // mainly for underlayColor
-
         style={this.getStyle('rowContainer')}
       >
         <View style={this.getStyle('row')}>
